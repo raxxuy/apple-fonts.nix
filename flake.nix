@@ -46,7 +46,7 @@
   };
 
   outputs =
-    inputs@{ self, nixpkgs, ... }:
+    inputs@{ nixpkgs, ... }:
     let
       lib = nixpkgs.lib;
 
@@ -79,7 +79,9 @@
 
               src = inputs.${name};
 
-              nativeBuildInputs = [ pkgs._7zz ];
+              nativeBuildInputs = [
+                pkgs._7zz
+              ];
 
               dontUnpack = true;
               dontConfigure = true;
@@ -166,8 +168,6 @@
           };
         };
 
-      getPackages = pkgs: self.packages.${pkgs.stdenv.hostPlatform.system};
-
       fontOptions = {
         enable = lib.mkEnableOption "Apple fonts";
 
@@ -182,13 +182,21 @@
       };
     in
     {
-      packages = forAllSystems (system: mkPackages nixpkgs.legacyPackages.${system});
+      packages = forAllSystems (
+        system:
+        mkPackages (
+          import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          }
+        )
+      );
 
       nixosModules.default =
         { config, pkgs, ... }:
         let
           cfg = config.fonts.apple;
-          packages = getPackages pkgs;
+          packages = mkPackages pkgs;
         in
         {
           options.fonts.apple = fontOptions;
@@ -202,7 +210,7 @@
         { config, pkgs, ... }:
         let
           cfg = config.appleFonts;
-          packages = getPackages pkgs;
+          packages = mkPackages pkgs;
         in
         {
           options.appleFonts = fontOptions;
